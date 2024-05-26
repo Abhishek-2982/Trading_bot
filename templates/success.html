@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Form Results</title>
+</head>
+<body>
+    <h1>API Form Results</h1>
+
+    {% if form.errors %}
+        <ul>
+            {% for error in form.errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Submit</button>
+    </form>
+
+    {% if message %}
+        <p>{{ message }}</p>
+    {% elif crossover_message %}
+        <p>{{ crossover_message }}</p>
+    {% endif %}
+</body>
+</html>

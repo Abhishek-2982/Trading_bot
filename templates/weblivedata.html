@@ -1,0 +1,85 @@
+<!-- weblivedata.html -->
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>TAAPI Live Data</title>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    </head>
+    <body>
+        <h1>TAAPI Live Data</h1>
+        <div id="data-container">
+            {% if data %}
+            <p>Response: {{ data }}</p>
+        {% endif %}
+            {% if initial_data %}
+                <pre>{{ initial_data|json_script }}</pre>
+            {% endif %}
+        </div>
+    
+    <script>
+       
+    function fetchAndUpdateData() {
+        $.ajax({
+            url: '/fetch_taapi_data/',
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                console.log(data)
+                let jsonData = JSON.stringify(data, null, 2)
+                let parsedData = JSON.parse(jsonData);
+
+// Initialize variables for 50 MA and 200 MA values
+let ma_50 = null;
+let ma_200 = null;
+
+// Check if the parsedData contains 'data' property
+if (parsedData && parsedData.data && Array.isArray(parsedData.data)) {
+    // Iterate over each item in the 'data' array
+    for (let item of parsedData.data) {
+        // Check if the item represents an MA indicator and has a valid result value
+        if (item && item.indicator === 'ma' && item.result && item.result.value !== undefined) {
+            // Extract the value based on the indicator ID (50 MA or 200 MA)
+            if (item.id.includes('ma_50')) {
+                ma_50 = item.result.value;
+            } else if (item.id.includes('ma_200')) {
+                ma_200 = item.result.value;
+            }
+        }
+    }
+} else {
+    console.error("Invalid data format:", parsedData);
+}
+
+// Log the extracted values
+console.log("50 MA value:", ma_50);
+console.log("200 MA value:", ma_200);
+
+                // Check for MA crossover
+                check_ma_crossover(ma_50,ma_200);
+                // Update HTML with new data
+                
+                $('#data-container').append('<pre>' + JSON.stringify(data, null, 2) + '</pre>');
+            },
+            complete: function() {
+                // Schedule the next fetch after 17 seconds
+                setTimeout(fetchAndUpdateData, 17000);
+            }
+        });
+    }
+    function check_ma_crossover(ma_50,ma_200) {
+        if (ma_50 !== null && ma_200 !== null) {
+            if (ma_50 > ma_200) {
+                console.log("MA 50 crossed above MA 200 - Bullish signal!");
+            } else if (ma_50 < ma_200) {
+                console.log("MA 50 crossed below MA 200 - Bearish signal!");
+            }
+        }
+    }
+    $(document).ready(function() {
+        fetchAndUpdateData();
+
+    });
+    </script>
+    </body>
+    </html>
+

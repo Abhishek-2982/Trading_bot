@@ -1,0 +1,18 @@
+{% extends 'layout.html' %}
+
+{% block title  %}
+    Kline Data Response
+{% endblock %}
+
+{% block content  %}
+<section>
+   <h1>Get Current Data</h1>
+   <h1>Kline Data Response</h1>
+   {% if error %}
+       <p style="color: red;">{{ error }}</p>
+   {% endif %}
+    <pre>{{ response }}</pre>
+  
+</section>
+{% endblock %}
+

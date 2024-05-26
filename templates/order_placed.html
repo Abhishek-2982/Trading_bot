@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <title>Order Placed</title>
+    <!-- Add any CSS styles here -->
+    <style>
+        /* Add your CSS styles here */
+        .response-container {
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Order Placed Successfully!</h1>
+        <!-- Accessing the form data -->
+        <p>Category: {{ response_data.form_data.category }}</p>
+        <p>Symbol: {{ response_data.form_data.symbol }}</p>
+        <p>Order Type: {{ response_data.form_data.order_type }}</p>
+        <!-- Add other form data properties as needed -->
+        <p>Price: {{ response_data.form_data.price }}</p>
+        <p>Time in Force: {{ response_data.form_data.time_in_force }}</p>
+        <p>Order Link ID: {{ response_data.form_data.order_link_id }}</p>
+        <p>Is Leverage: {{ response_data.form_data.is_leverage }}</p>
+        <p>Order Filter: {{ response_data.form_data.order_filter }}</p>
+
+        <!-- Display additional data from response_data if needed -->
+        <!-- For example: -->
+        <p>Additional Data: {{ response_data.additional_data }}</p>
+    </div>
+    <div id="data-container">
+
+    
+    {% if initial_data %}
+    <pre>{{ initial_data|json_script }}</pre>
+    {% endif %}
+    <a href="/">Return to Home</a> <!-- Adjust the URL as needed -->
+    </div>
+    <script>
+       
+    function fetchAndUpdateData() {
+            $.ajax({
+                url: '/fetch_taapi_data/',
+                type: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    
+                    let jsonData = JSON.stringify(data, null, 2)
+                    console.log(jsonData)
+                    let parsedData = JSON.parse(jsonData);
+    // Initialize variables for 50 MA and 200 MA values
+    let ma_50 = null;
+    let ma_200 = null;
+                    
+    // Check if the parsedData contains 'data' property
+    if (parsedData && parsedData.data && Array.isArray(parsedData.data)) {
+        // Iterate over each item in the 'data' array
+        for (let item of parsedData.data) {
+            console.log("data of form"+item)
+            // Check if the item represents an MA indicator and has a valid result value
+            if (item && item.indicator === 'ma' && item.result && item.result.value !== undefined) {
+                // Extract the value based on the indicator ID (50 MA or 200 MA)
+                if (item.id.includes('ma_50')) {
+                    ma_50 = item.result.value;
+                } else if (item.id.includes('ma_200')) {
+                    ma_200 = item.result.value;
+                }
+            }
+        }
+    } else {
+        console.error("Invalid data format:", parsedData);
+    }
+    
+    // Log the extracted values
+    console.log("50 MA value:", ma_50);
+    console.log("200 MA value:", ma_200);
+    
+                    // Check for MA crossover
+                    check_ma_crossover(ma_50,ma_200);
+                    // Update HTML with new data
+                    
+                    $('#data-container').append('<pre>' + JSON.stringify(data, null, 2) + '</pre>');
+                },
+                complete: function() {
+                    // Schedule the next fetch after 17 seconds
+                    setTimeout(fetchAndUpdateData, 17000);
+                }
+            });
+        }
+
+        function fetchWalletBalance(callback) {
+            // Hit the API to fetch wallet balance
+            $.ajax({
+                url: '/fetch_wallet_balance/', // URL of your Django view to fetch wallet balance
+                type: 'GET',
+                async: false, // Make the request synchronous
+                dataType: 'json',
+                success: function(data) {
+                    console.log(data);
+                    let walletBalance = null;
+                    // Check if the response contains the expected structure
+                    if (data && data.result && data.result.list && data.result.list.length > 0) {
+                        // Get the first item in the list
+                        let firstItem = data.result.list[0];
+                        // Check if the 'coin' array exists and has elements
+                        if (firstItem.coin && firstItem.coin.length > 0) {
+                            // Get the first coin object
+                            let coinObj = firstItem.coin[0];
+                            // Check if the 'walletBalance' property exists
+                            if (coinObj.walletBalance !== undefined) {
+                                // Extract the wallet balance
+                                walletBalance = coinObj.walletBalance;
+                            }
+                        }
+                    }
+                    console.log("Wallet Balance:", walletBalance);
+                    // Invoke the callback function with the wallet balance
+                    callback(walletBalance);
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error fetching wallet balance:", error);
+                    // Invoke the callback function with null in case of an error
+                    callback(null);
+                }
+            });
+        }
+        
+        
+        function check_ma_crossover(ma_50, ma_200) {
+            // Define a callback function to handle the wallet balance
+            function handleWalletBalance(walletBalance) {
+                console.log(walletBalance);
+
+                if (ma_50 !== null && ma_200 !== null) {
+                    console.log("hello");
+                    if (ma_50 > ma_200 &&  walletBalance ==  0)  {
+                        console.log("MA 50 crossed above MA 200 - Bullish signal!");
+                        var formData = {
+                            csrfmiddlewaretoken: '{{ csrf_token }}',
+                            category: '{{ response_data.form_data.category }}',
+                            symbol: '{{ response_data.form_data.symbol }}',
+                            orderType: '{{ response_data.form_data.order_type }}',
+                            // Add other form data properties as needed
+                            price: '{{ response_data.form_data.price }}',
+                            timeInForce: '{{ response_data.form_data.time_in_force }}',
+                            orderLinkId: '{{ response_data.form_data.order_link_id }}',
+                            isLeverage: '{{ response_data.form_data.is_leverage }}',
+                            orderFilter: '{{ response_data.form_data.order_filter }}'
+                        };
+                        console.log(formData)
+                        
+                        // Send AJAX request
+                        $.ajax({
+                            url: '/place_order/',
+                            type: 'POST',
+                            data: formData,
+                            success: function(response) {
+                                // Handle successful response
+                                console.log(response);
+                            },
+                            error: function(xhr, status, error) {
+                                // Handle error
+                                console.error(error);
+                            }
+                        });    
+
+                     }
+                    else if (ma_50 < ma_200 && walletBalance > 0) {
+                        console.log("MA 50 crossed below MA 200 - Bearish signal!");
+                    }
+                }
+            }
+        
+            // Fetch the wallet balance asynchronously and pass the callback function
+            fetchWalletBalance(handleWalletBalance);
+        }
+        $(document).ready(function() {
+            fetchAndUpdateData();
+    
+        });
+        </script>
+</body>
+</html>

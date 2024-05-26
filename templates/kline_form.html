@@ -1,0 +1,15 @@
+{% extends 'layout.html' %}
+
+{% block title  %}
+    Kline Data Response
+{% endblock %}
+
+{% block content  %}
+<section>
+    <h1>Kline Analysis</h1>
+    <form method="post">
+        {% csrf_token %}  {{ form.as_p }}  <button type="submit">Submit</button>
+    </form>
+  
+</section>
+{% endblock %}

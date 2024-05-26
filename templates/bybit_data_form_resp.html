@@ -1,0 +1,16 @@
+{% extends 'layout.html' %}
+
+{% block title  %}
+Trading Bot Parameters{% endblock %}
+
+{% block content  %}
+{% if response_data %}
+<h2>Response Data</h2>
+<p>Server Time: {{ response_data.get('server_time') }}</p>
+<h3>K-Line Data</h3>
+<pre>{{ response_data.get('kline_data') }}</pre>
+<h3>Premium Index Data</h3>
+<pre>{{ response_data.get('premium_index_data') }}</pre>
+{% endif %}
+{% endblock %}
+

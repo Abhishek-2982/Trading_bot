@@ -1,0 +1,23 @@
+{% extends 'layout.html' %}
+
+{% block title  %}
+Trading Bot Parameters{% endblock %}
+
+{% block content  %}
+    <h1>Bybit Data</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Submit</button>
+      </form>
+      {% if response_data %}
+      <h2>Response Data</h2>
+      <p>Server Time: {{ response_data.get('server_time') }}</p>
+      <h3>K-Line Data</h3>
+      <pre>{{ response_data.get('kline_data') }}</pre>
+      <h3>Premium Index Data</h3>
+      <pre>{{ response_data.get('premium_index_data') }}</pre>
+      {% endif %} 
+{% endblock %}
+
+
